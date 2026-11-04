@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Merel V8</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #chat-container {
+            width: 380px;
+            padding: 25px;
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 255, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+        h2 {
+            font-weight: 200;
+            letter-spacing: 12px;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 16px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        #chat-history {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            scrollbar-width: none;
+        }
+        #chat-history::-webkit-scrollbar { display: none; }
+        .msg {
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            max-width: 90%;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .msg.user {
+            color: #b0b0b0;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom-right-radius: 2px;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .msg.merel {
+            color: #00ffff;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            border-bottom-left-radius: 2px;
+        }
+        #user-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            color: #fff;
+            padding: 15px;
+            width: 100%;
+            border-radius: 8px;
+            outline: none;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        #user-input:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+        #brain-container {
+            flex-grow: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #0a0f15 0%, #000000 100%);
+            height: 100vh;
+            width: calc(100vw - 380px); /* FORCE full width minus chat */
+            overflow: hidden;
+        }
+
+        #brain-container canvas {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #data-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 400px;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            color: #00ffff;
+            font-size: 12px;
+            z-index: 20;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+        #data-panel h3 {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: #8a7a58;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .data-row {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .data-row .label { color: #888; }
+        .data-row .val { color: #fff; font-weight: bold; }
+        .data-stream-container {
+            margin-top: 15px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            padding-top: 10px;
+        }
+        .data-stream {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            grid-template-rows: repeat(16, 1fr);
+            gap: 2px;
+            height: 250px;
+            margin-top: 5px;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        .cell {
+            border-radius: 2px;
+            background-color: #0a0a0c;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .cell.selected {
+            border: 1px solid #ffffff;
+            box-shadow: 0 0 10px #ffffff, inset 0 0 5px #ffffff;
+            z-index: 10;
+        }
+        .word-cloud-container {
+            margin-top: 15px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            padding-top: 10px;
+        }
+        .word-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 5px;
+            min-height: 40px;
+        }
+        .word-tag {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .word-tag.positive {
+            background: rgba(0, 255, 255, 0.15);
+            color: #00ffff;
+            border: 1px solid rgba(0, 255, 255, 0.4);
+        }
+        .word-tag.negative {
+            background: rgba(255, 0, 170, 0.15);
+            color: #ff00aa;
+            border: 1px solid rgba(255, 0, 170, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <h2>MEREL</h2>
+        <div id="chat-history"></div>
+        <input type="text" id="user-input" placeholder="Type a message..." autocomplete="off">
+    </div>
+
+    <div id="brain-container"></div>
+
+    <div id="data-panel">
+        <h3>VISUAL CORTEX</h3>
+        <div class="data-row">
+            <span class="label">Active Memory:</span>
+            <span id="data-source" class="val">-</span>
+        </div>
+        <div class="data-row">
+            <span class="label">Top Nodes:</span>
+            <span id="top-nodes" class="val">-</span>
+        </div>
+        <div class="word-cloud-container">
+            <h3>ACTIVE THOUGHTS</h3>
+            <div id="word-cloud" class="word-cloud"></div>
+        </div>
+        <div class="data-stream-container">
+            <h3>NEURAL HEATMAP (16x16)</h3>
+            <div id="data-stream" class="data-stream"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+    <script src="/static/visualize_v3.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Ignore the trained model (too large for GitHub)
+merel_words.pth
+
+# Ignore personal data
+my_personal_data.txt
+pure_chat_backup.txt
+code_data.txt
+wifi_code.txt
+wiki_data.txt
+*.txt
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore OS files
+.DS_Store
