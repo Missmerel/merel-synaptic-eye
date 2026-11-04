@@ -9,6 +9,9 @@ wifi_code.txt
 wiki_data.txt
 *.txt
 
+# Ignore all zip backups
+*.zip
+
 # Ignore Python cache
 __pycache__/
 *.pyc
