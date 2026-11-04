@@ -1,5 +1,15 @@
 # MEREL V8: The Synaptic Eye
 
+![Merel's 3D Brain](screenshots/brain.png)
+*The 3D synaptic brain visualizer, showing 256 neurons firing in real-time.*
+
+![Neural Heatmap](screenshots/heatmap.png)
+*The 16x16 neural heatmap, mapping the hidden state to a thermal camera.*
+
+![Chat Interface](screenshots/chat.png)
+*The chat interface, with the Active Thoughts word cloud and Visual Cortex data.*
+
+---
 A custom-built 256-layer Transformer neural network trained from scratch on a Mac. She runs locally, has a 3D holographic brain visualizer, a real-time neural heatmap, and a synthesized audio engine.
 
 ## Features
