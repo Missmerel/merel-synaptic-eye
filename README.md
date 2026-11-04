@@ -1,6 +1,6 @@
 # MEREL V8: The Synaptic Eye
 
-![Merel's 3D Brain](screenshots/brain.png)
+![Merel's 3D Brain](screenshots/brain.gif)
 *The 3D synaptic brain visualizer, showing 256 neurons firing in real-time.*
 
 ![Neural Heatmap](screenshots/heatmap.png)
