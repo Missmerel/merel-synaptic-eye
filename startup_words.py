@@ -7,7 +7,7 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO
 
 torch.set_num_threads(1)
-block_size = 64
+block_size = 128
 device = 'cpu'
 
 with open('my_personal_data.txt', 'r', encoding='utf-8') as f:

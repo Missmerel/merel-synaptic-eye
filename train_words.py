@@ -12,7 +12,7 @@ torch.set_num_threads(1)
 # 1. SETUP
 # ==========================================
 batch_size = 16
-block_size = 64
+block_size = 128
 max_iters = 30000
 learning_rate = 1e-3 # Increased learning rate for faster training
 device = 'cpu'
@@ -49,9 +49,9 @@ def get_batch(split):
 class MerelModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.token_embedding = nn.Embedding(vocab_size, 256)  # Changed from 64
-        self.position_embedding = nn.Embedding(block_size, 256) # Changed from 64
-        self.lm_head = nn.Linear(256, vocab_size) # Changed from 64
+        self.token_embedding = nn.Embedding(vocab_size, 256)
+        self.position_embedding = nn.Embedding(block_size, 256)
+        self.lm_head = nn.Linear(256, vocab_size)
 
     def forward(self, idx, targets=None):
         B, T = idx.shape

@@ -484,7 +484,79 @@ window.addEventListener('load', () => {
         });
     }
 });
+// ==========================================
+// 6. SVG EXPORTER
+// ==========================================
+window.downloadSVG = () => {
+    const brain = window.brainInstance;
+    if (!brain) return;
 
+    const width = brain.app.renderer.width / brain.app.renderer.resolution;
+    const height = brain.app.renderer.height / brain.app.renderer.resolution;
+
+    // Start the SVG string
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n`;
+    svg += `<rect width="100%" height="100%" fill="#050505"/>\n`;
+
+    // Sort neurons by depth (back to front)
+    const sortedNeurons = [...brain.neurons].sort((a, b) => b.z - a.z);
+
+    // 1. Draw Connections
+    for (let i = 0; i < sortedNeurons.length; i++) {
+        const n1 = sortedNeurons[i];
+        for (let j = i + 1; j < sortedNeurons.length; j++) {
+            const n2 = sortedNeurons[j];
+            const dx = n1.x - n2.x; const dy = n1.y - n2.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist < 50) {
+                const avg = (Math.abs(n1.activation) + Math.abs(n2.activation)) * 0.5;
+                const alpha = (1 - dist / 50) * avg * Math.min(n1.scale, n2.scale);
+                if (alpha > 0.05) {
+                    const color = (n1.activation > 0 && n2.activation > 0) ? '#00ffff' : '#ff00aa';
+                    svg += `<line x1="${n1.x.toFixed(2)}" y1="${n1.y.toFixed(2)}" x2="${n2.x.toFixed(2)}" y2="${n2.y.toFixed(2)}" stroke="${color}" stroke-width="1" opacity="${alpha.toFixed(2)}"/>\n`;
+                }
+            }
+        }
+    }
+
+    // 2. Draw Neurons
+    sortedNeurons.forEach(n => {
+        if (isNaN(n.x) || isNaN(n.y)) return;
+        const baseColor = n.activation > 0 ? '#00ffff' : '#ff00aa';
+        const color = n.decay > 0.8 ? '#ffffff' : baseColor;
+        const intensity = Math.max(Math.abs(n.activation), n.decay);
+        const depthFactor = Math.max(0.2, n.scale);
+        const alpha = Math.min(intensity * 2 + 0.1, 1) * depthFactor;
+        const size = (2 + intensity * 5) * n.scale;
+
+        // Glow
+        svg += `<circle cx="${n.x.toFixed(2)}" cy="${n.y.toFixed(2)}" r="${(size * 3).toFixed(2)}" fill="${color}" opacity="${(alpha * 0.2).toFixed(2)}"/>\n`;
+        // Core
+        svg += `<circle cx="${n.x.toFixed(2)}" cy="${n.y.toFixed(2)}" r="${size.toFixed(2)}" fill="${color}" opacity="${alpha.toFixed(2)}"/>\n`;
+    });
+
+    svg += `</svg>\n`;
+
+    // Create a blob and download it
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `merel_brain_${Date.now()}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+// Connect the button
+window.addEventListener('load', () => {
+    const btn = document.getElementById('download-svg-btn');
+    if (btn) {
+        btn.addEventListener('click', window.downloadSVG);
+    }
+});
 window.selectNeuron = (index) => {
     const brain = window.brainInstance;
     if (!brain) return;
