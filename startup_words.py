@@ -47,10 +47,28 @@ class MerelModel(nn.Module):
         return idx
 
 model = MerelModel().to(device)
-if os.path.exists('merel_words.pth'):
+
+if os.path.exists('merel_words_int8.pth'):
+    # 1. Force the ARM engine
+    torch.backends.quantized.engine = 'qnnpack'
+
+    # 2. Quantize the empty architecture first
+    quantized_model = torch.quantization.quantize_dynamic(
+        model,
+        {nn.Linear},
+        dtype=torch.qint8
+    )
+
+    # 3. Load the int8 weights into the quantized architecture
+    quantized_model.load_state_dict(torch.load('merel_words_int8.pth', map_location=device))
+    model = quantized_model
+    print("Optimized Int8 brain loaded!")
+
+elif os.path.exists('merel_words.pth'):
     model.load_state_dict(torch.load('merel_words.pth', map_location=device))
-    print("Brain loaded!")
-model.eval()
+    print("Original Float32 brain loaded!")
+
+model.eval()  # <--- KEEP THIS (only once!)
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
