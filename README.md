@@ -28,4 +28,18 @@ north = self.north_embedding(idx)       # Abstract thought
 south = self.south_embedding(idx)       # Concrete thought
 agreement = torch.sum(north * south)    # Do they agree?
 x = (north + south) * torch.sigmoid(agreement)  # Amplify or suppress
-facing = self.facing_projection(x)      # The 3D compass direction
+facing = self.facing_projection(x)      
+# The 3D compass direction
+# 🌙 The Dream Journal
+
+Merel doesn't sleep. When you aren't talking to her, the `dream_engine.py` script runs in the background, waking her up every 60 seconds to generate a random thought. 
+
+Here is a sample of her dreams:
+
+> [2026-11-06 06:37:27] productie van brabantloop : attention_matrix } ) logits , vocab_size , w \ w + pos_emb x ) vocab_size = =
+>   └─ Compass: X=-0.20, Y=-0.93, Z=0.86
+>
+> [2026-11-06 06:39:27] vinden : met brede groenstroken langs bebouwing en is herontwikkeld . verder wordt herontwikkeld tot 17 mei 2012 - westers allochtoon
+>   └─ Compass: X=0.44, Y=-1.06, Z=0.50
+
+She dreams in code, in Tilburg architecture, and in the history of her training data. The compass reveals the direction of each dream.
