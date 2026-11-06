@@ -90,10 +90,22 @@ try:
         # Format the timestamp
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Write to the dream journal
-        with open('dreams.txt', 'a', encoding='utf-8') as f:
-            f.write(f"[{now}] {dream_text}\n")
-            f.write(f"  └─ Compass: X={last_facing[0]:.2f}, Y={last_facing[1]:.2f}, Z={last_facing[2]:.2f}\n\n")
+        import json
+        dream_entry = {
+            "timestamp": now,
+            "text": dream_text,
+            "facing": {
+                "x": round(last_facing[0], 2),
+                "y": round(last_facing[1], 2),
+                "z": round(last_facing[2], 2)
+            }
+        }
+
+        # Save to a JSON Lines file (one JSON object per line)
+        with open('temporal_compass.jsonl', 'a', encoding='utf-8') as f:
+            f.write(json.dumps(dream_entry) + "\n")
+
+        print(f"[{now}] {dream_text}")
 
         print(f"[{now}] {dream_text}")
 

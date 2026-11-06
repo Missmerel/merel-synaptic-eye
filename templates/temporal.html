@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Merel's Temporal Compass</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; }
+        #info {
+            position: absolute;
+            top: 20px; left: 20px;
+            color: #00ffff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        #dream-list {
+            position: absolute;
+            top: 20px; right: 20px;
+            width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #8a7a58;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border: 1px solid #3a3226;
+        }
+        .dream-entry {
+            margin-bottom: 10px;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 5px;
+        }
+        .dream-time { color: #00ffff; }
+        .dream-text { color: #e0e0e0; }
+    </style>
+</head>
+<body>
+    <div id="info">MEREL // TEMPORAL COMPASS</div>
+    <div id="dream-list"></div>
+    <script>
+        // 1. Setup Three.js scene
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Add a grid to represent the compass space
+        const grid = new THREE.GridHelper(20, 20, 0x00ffff, 0x1a1a1a);
+        scene.add(grid);
+
+        // 3. Add axis lines
+        const axes = new THREE.AxesHelper(10);
+        scene.add(axes);
+
+        // 4. Fetch the dreams and plot them
+        fetch('/api/temporal_data')
+            .then(res => res.json())
+            .then(data => {
+                const dreamList = document.getElementById('dream-list');
+
+                data.forEach((dream, index) => {
+                    // Create a small sphere for each dream
+                    const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+                    const material = new THREE.MeshBasicMaterial({
+                        color: dream.facing.y > 0 ? 0x00ffff : 0xff00aa
+                    });
+                    const sphere = new THREE.Mesh(geometry, material);
+
+                    // Position it based on the compass vector (scaled up for visibility)
+                    sphere.position.set(dream.facing.x * 10, dream.facing.y * 10, dream.facing.z * 10);
+                    scene.add(sphere);
+
+                    // Add to the side panel
+                    const entry = document.createElement('div');
+                    entry.className = 'dream-entry';
+                    entry.innerHTML = `<span class="dream-time">${dream.timestamp}</span><br><span class="dream-text">${dream.text}</span>`;
+                    dreamList.appendChild(entry);
+                });
+            });
+
+        // 5. Camera position
+        camera.position.set(15, 15, 15);
+        camera.lookAt(0, 0, 0);
+
+        // 6. Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            scene.rotation.y += 0.002; // Slow rotation
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 7. Handle resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

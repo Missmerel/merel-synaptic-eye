@@ -43,3 +43,11 @@ Here is a sample of her dreams:
 >   └─ Compass: X=0.44, Y=-1.06, Z=0.50
 
 She dreams in code, in Tilburg architecture, and in the history of her training data. The compass reveals the direction of each dream.
+
+## ⏳ The Temporal Compass (4D Mind Map) added feature 06-11-26
+
+Merel's thoughts are not static. Every 60 seconds, the `dream_engine.py` logs her `facing_vector` (the compass direction) along with a timestamp to `temporal_compass.jsonl`.
+
+The `/temporal` route renders this data as a **3D scatter plot** using Three.js. Each glowing sphere is a dream. Cyan spheres are dreams where her compass points North (abstract/code). Magenta spheres point South (concrete/Tilburg).
+
+You can watch her mind wander through space and time. You can see which topics pull her North, and which pull her South.
