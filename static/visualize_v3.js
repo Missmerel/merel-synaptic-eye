@@ -348,7 +348,7 @@ class ChatController {
             this.addMessage('Merel', data.text, 'merel');
 
             if (data.brain_activity) {
-                this.brain.updateActivations(data.brain_activity);
+                this.brain.updateActivations(data.brain_activity, data.facing_vector);
 
                 const streamEl = document.getElementById('data-stream');
                 if (streamEl) {

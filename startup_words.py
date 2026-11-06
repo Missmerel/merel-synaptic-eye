@@ -24,23 +24,40 @@ decode = lambda l: ' '.join([itos[i] for i in l])
 class MerelModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.token_embedding = nn.Embedding(vocab_size, 256)
+        self.north_embedding = nn.Embedding(vocab_size, 128)
+        self.south_embedding = nn.Embedding(vocab_size, 128)
         self.position_embedding = nn.Embedding(block_size, 256)
+        self.facing_projection = nn.Linear(256, 3)
         self.lm_head = nn.Linear(256, vocab_size)
 
-    def forward(self, idx):
+    def forward(self, idx, targets=None):
         B, T = idx.shape
-        tok_emb = self.token_embedding(idx)
+        north = self.north_embedding(idx)
+        south = self.south_embedding(idx)
+        combined = torch.cat([north, south], dim=-1)
         pos_emb = self.position_embedding(torch.arange(T, device=device))
-        x = tok_emb + pos_emb
+        x = combined + pos_emb
+        facing = self.facing_projection(x)
+        agreement = torch.sum(north * south, dim=-1, keepdim=True)
+        x = x * torch.sigmoid(agreement)
         logits = self.lm_head(x)
-        return logits, x
+
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
+            loss = F.cross_entropy(logits, targets)
+
+        # RETURN 4 THINGS: logits, loss, facing, and the hidden state x
+        return logits, loss, facing, x
 
     def generate(self, idx, max_new_tokens):
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -block_size:]
-            logits, _ = self(idx_cond)
-            logits = logits[:, -1, :]
+            logits, _, _, _ = self(idx_cond)
+            logits = logits[:, -1, :]  # <--- THIS IS THE MISSING LINE
             probs = F.softmax(logits, dim=-1)
             idx_next = torch.multinomial(probs, num_samples=1)
             idx = torch.cat((idx, idx_next), dim=1)
@@ -49,26 +66,16 @@ class MerelModel(nn.Module):
 model = MerelModel().to(device)
 
 if os.path.exists('merel_words_int8.pth'):
-    # 1. Force the ARM engine
     torch.backends.quantized.engine = 'qnnpack'
-
-    # 2. Quantize the empty architecture first
-    quantized_model = torch.quantization.quantize_dynamic(
-        model,
-        {nn.Linear},
-        dtype=torch.qint8
-    )
-
-    # 3. Load the int8 weights into the quantized architecture
+    quantized_model = torch.quantization.quantize_dynamic(model, {nn.Linear}, dtype=torch.qint8)
     quantized_model.load_state_dict(torch.load('merel_words_int8.pth', map_location=device))
     model = quantized_model
-    print("Optimized Int8 brain loaded!")
-
+    print("Optimized Entangled Int8 brain loaded!")
 elif os.path.exists('merel_words.pth'):
     model.load_state_dict(torch.load('merel_words.pth', map_location=device))
-    print("Original Float32 brain loaded!")
+    print("Original Entangled Float32 brain loaded!")
 
-model.eval()  # <--- KEEP THIS (only once!)
+model.eval()
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -98,14 +105,36 @@ def handle_message(data):
 
     with torch.no_grad():
         generated = model.generate(context, max_new_tokens=15)[0].tolist()
-        _, hidden_state = model(context)
+        # Get 4 things: logits, loss, facing, hidden_state
+        _, _, facing, hidden_state = model(context)
+
+        # 1. For the visualizer (256 dimensions)
+        brain_activity = hidden_state[0, -1, :].tolist()
+
+        # 2. For the compass (3 dimensions)
+        last_facing = facing[0, -1, :].tolist()
+
+    # Get the compass
 
     response = decode(generated)
     response = response.replace(system_prompt, "")
     her_response = response.split("merelprrrr:")[-1].strip()
     her_response = her_response.replace("dennis", "").replace(":", "").strip()
 
+    # Get the facing vector (compass) from the model
+    # The new model returns (logits, loss, facing)
+    _, _, facing, hidden_state = model(context)
+
+    # Use the facing vector as the brain activity (it's a 3D vector)
+    # Pad it with zeros so the visualizer still has 256 values to display
+    # 1. For the visualizer (256 dimensions)
     brain_activity = hidden_state[0, -1, :].tolist()
+
+    # 2. For the compass (3 dimensions)
+    last_facing = facing[0, -1, :].tolist()
+    while len(brain_activity) < 256:
+        brain_activity.append(0)
+
     attention_matrix = []
 
     data_source = "Unknown"
@@ -131,7 +160,8 @@ def handle_message(data):
         'brain_activity': brain_activity,
         'attention': attention_matrix,
         'data_source': data_source,
-        'top_nodes': top_words
+        'top_nodes': top_words,
+        'facing_vector': last_facing
     })
 
 if __name__ == '__main__':
